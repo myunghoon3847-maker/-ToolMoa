@@ -1,342 +1,127 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>툴모아</title>
-  <meta name="description" content="영상, 이미지, PDF, 파일 변환 도구를 바로 사용할 수 있는 온라인 도구 모음" />
-  <link rel="stylesheet" href="./styles.css" />
-  
-  <!-- 🌟 도구 실행 화면(iframe)을 위한 추가 스타일 -->
-  <style>
-    .tool-frame-container {
-      display: none; /* 초기에는 숨김 */
-      width: 100%;
-      height: 75vh; /* 화면 높이의 75% 차지 */
-      margin-top: 10px;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #ffffff;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    
-    #toolFrame {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-    .hide-grid {
-      display: none !important;
-    }
-
-    .back-btn {
-      display: none; /* 초기에는 숨김 */
-      margin-bottom: 20px;
-      padding: 10px 20px;
-      background-color: #f1f5f9;
-      color: #334155;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 14px;
-      transition: all 0.2s ease;
-    }
-    .back-btn:hover {
-      background-color: #e2e8f0;
-      color: #0f172a;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초간단 이미지 변환기 | ToolMoa</title>
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .tool-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        input[type="file"], select, button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-main">
-      <!-- 🌟 로고 클릭 시에도 도구 목록으로 돌아오도록 이벤트 추가 -->
-      <a href="#" class="brand" aria-label="툴모아 홈" onclick="showGrid(); return false;">
-        <span class="brand-logo" aria-hidden="true">
-          <svg viewBox="0 0 48 48" role="img">
-            <rect x="8" y="8" width="14" height="14" rx="4"></rect>
-            <rect x="26" y="8" width="14" height="14" rx="4"></rect>
-            <rect x="8" y="26" width="14" height="14" rx="4"></rect>
-            <rect x="26" y="26" width="14" height="14" rx="4"></rect>
-          </svg>
-        </span>
-        <span class="brand-name">툴모아</span>
-      </a>
 
-      <div class="header-actions">
-        <button class="search-toggle" type="button" aria-label="검색 열기">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-        </button>
-        <button class="mobile-menu-button" type="button" aria-label="메뉴 열기" aria-expanded="false">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
+    <div class="tool-container">
+        <h1>이미지 포맷 변환기 🔄</h1>
+        <p>서버 저장 없이 브라우저에서 안전하게 변환됩니다.</p>
+
+        <!-- 1. 파일 선택 -->
+        <input type="file" id="imageInput" accept="image/*">
+
+        <!-- 2. 변환할 포맷 선택 -->
+        <select id="formatSelect">
+            <option value="image/jpeg">JPG로 변환</option>
+            <option value="image/png">PNG로 변환</option>
+            <option value="image/webp">WEBP로 변환 (추천)</option>
+        </select>
+
+        <!-- 3. 변환 버튼 -->
+        <button id="convertBtn">변환 및 다운로드</button>
+
+        <!-- 변환 처리를 위한 숨겨진 캔버스 -->
+        <canvas id="canvas" style="display:none;"></canvas>
     </div>
 
-    <nav class="category-nav" aria-label="도구 카테고리">
-      <div class="nav-inner">
-        <!-- 🌟 전체 도구 클릭 시에도 도구 목록 띄우기 -->
-        <button class="category-button active" type="button" data-category="all" onclick="showGrid()">전체 도구</button>
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const formatSelect = document.getElementById('formatSelect');
+        const convertBtn = document.getElementById('convertBtn');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
 
-         <div class="category-item">
-          <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
-            이미지
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"></path></svg>
-          </button>
-          <div class="dropdown-menu">
-            <a href="#" data-tool="image-compress"><strong>이미지 압축</strong><span>화질을 유지하며 용량 줄이기</span></a>
-            <a href="#" data-tool="image-resize"><strong>크기 조절</strong><span>가로·세로 크기 변경</span></a>
-            <!-- 🌟 이미지 변환 메뉴: iframe 타겟 지정 및 클릭 이벤트 추가 -->
-            <a href="image_convert/" target="toolFrame" data-tool="image-convert" onclick="showIframe()"><strong>이미지 변환</strong><span>JPG, PNG, WEBP 변환</span></a>
-            <a href="#" data-tool="image-background"><strong>배경 제거</strong><span>사진 배경 자동 제거</span></a>
-            <a href="#" data-tool="image-crop"><strong>이미지 자르기</strong><span>원하는 영역만 잘라내기</span></a>
-          </div>
-        </div>
-        
-        <div class="category-item">
-          <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
-            AI 도구
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"></path></svg>
-          </button>
-          <div class="dropdown-menu">
-            <a href="https://myunghoon3847-maker.github.io/Lumen/" target="_blank" rel="noopener noreferrer">
-              <strong>루멘 AI</strong><span>AI 도구 바로가기</span>
-            </a>
-          </div>
-        </div>
+        convertBtn.addEventListener('click', () => {
+            // 파일이 선택되었는지 확인
+            if (!imageInput.files[0]) {
+                alert('변환할 이미지를 먼저 선택해주세요!');
+                return;
+            }
 
-        <div class="category-item">
-          <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
-            외국어
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"></path></svg>
-          </button>
-          <div class="dropdown-menu">
-            <a href="https://myunghoon3847-maker.github.io/harunihon/" target="_blank" rel="noopener noreferrer">
-              <strong>하루니혼</strong><span>일본어 학습 도구 바로가기</span>
-            </a>
-          </div>
-        </div>
+            const file = imageInput.files[0];
+            const reader = new FileReader();
 
-        <div class="category-item">
-          <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
-            영상
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"></path></svg>
-          </button>
-          <div class="dropdown-menu">
-            <a href="#" data-tool="video-compress"><strong>영상 압축</strong><span>동영상 용량 줄이기</span></a>
-            <a href="#" data-tool="video-convert"><strong>영상 변환</strong><span>MP4, MOV, AVI 변환</span></a>
-            <a href="#" data-tool="video-cut"><strong>영상 자르기</strong><span>구간 선택 및 저장</span></a>
-            <a href="#" data-tool="video-audio"><strong>오디오 추출</strong><span>영상에서 MP3 추출</span></a>
-            <a href="#" data-tool="video-gif"><strong>GIF 만들기</strong><span>영상 구간을 GIF로 변환</span></a>
-          </div>
-        </div>
+            // 파일을 읽은 후 실행될 로직
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // 캔버스 크기를 원본 이미지 크기와 동일하게 설정
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // 캔버스에 이미지 그리기
+                    ctx.drawImage(img, 0, 0);
 
-        <div class="category-item">
-          <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
-            파일 변환
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"></path></svg>
-          </button>
-          <div class="dropdown-menu wide">
-            <div class="dropdown-group">
-              <span class="dropdown-title">문서 변환</span>
-              <a href="#" data-tool="pdf-word"><strong>PDF → Word</strong><span>PDF를 DOCX로 변환</span></a>
-              <a href="#" data-tool="word-pdf"><strong>Word → PDF</strong><span>DOCX를 PDF로 변환</span></a>
-              <a href="#" data-tool="excel-pdf"><strong>Excel → PDF</strong><span>스프레드시트를 PDF로 변환</span></a>
-            </div>
-            <div class="dropdown-group">
-              <span class="dropdown-title">미디어 변환</span>
-              <a href="#" data-tool="audio-convert"><strong>오디오 변환</strong><span>MP3, WAV, M4A 변환</span></a>
-              <a href="#" data-tool="archive-convert"><strong>압축 파일 변환</strong><span>ZIP, RAR, 7Z 변환</span></a>
-              <a href="#" data-tool="ebook-convert"><strong>전자책 변환</strong><span>EPUB, MOBI, PDF 변환</span></a>
-            </div>
-          </div>
-        </div>
+                    // 선택한 포맷으로 변환 (품질은 0.9로 설정)
+                    const format = formatSelect.value;
+                    const extension = format.split('/')[1]; 
+                    const newDataUrl = canvas.toDataURL(format, 0.9);
 
-        <div class="category-item">
-          <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
-            PDF
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"></path></svg>
-          </button>
-          <div class="dropdown-menu">
-            <a href="#" data-tool="pdf-merge"><strong>PDF 합치기</strong><span>여러 PDF를 하나로</span></a>
-            <a href="#" data-tool="pdf-split"><strong>PDF 나누기</strong><span>필요한 페이지만 분리</span></a>
-            <a href="#" data-tool="pdf-compress"><strong>PDF 압축</strong><span>PDF 파일 용량 줄이기</span></a>
-            <a href="#" data-tool="pdf-image"><strong>PDF → 이미지</strong><span>페이지를 JPG로 변환</span></a>
-          </div>
-        </div>
+                    // 다운로드 링크 생성 및 자동 클릭
+                    const link = document.createElement('a');
+                    link.download = `ToolMoa_converted.${extension}`;
+                    link.href = newDataUrl;
+                    link.click();
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+    </script>
 
-        <div class="category-item">
-          <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
-            오디오
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"></path></svg>
-          </button>
-          <div class="dropdown-menu">
-            <a href="#" data-tool="audio-compress"><strong>오디오 압축</strong><span>음질과 용량 조절</span></a>
-            <a href="#" data-tool="audio-cut"><strong>오디오 자르기</strong><span>원하는 구간만 저장</span></a>
-            <a href="#" data-tool="audio-merge"><strong>오디오 합치기</strong><span>여러 파일 이어 붙이기</span></a>
-            <a href="#" data-tool="audio-convert"><strong>오디오 변환</strong><span>MP3, WAV, M4A 변환</span></a>
-          </div>
-        </div>
-
-        <div class="category-item">
-          <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
-            기타 도구
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"></path></svg>
-          </button>
-          <div class="dropdown-menu align-right">
-            <a href="#" data-tool="qr"><strong>QR 코드 만들기</strong><span>링크·텍스트 QR 생성</span></a>
-            <a href="#" data-tool="text"><strong>텍스트 정리</strong><span>공백·줄바꿈 정리</span></a>
-            <a href="#" data-tool="password"><strong>비밀번호 생성</strong><span>강력한 비밀번호 만들기</span></a>
-            <a href="#" data-tool="color"><strong>색상 코드 변환</strong><span>HEX, RGB, HSL 변환</span></a>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <div class="mobile-category-panel" aria-hidden="true">
-      <button class="mobile-category-title" type="button" data-mobile-target="ai-tools">AI 도구 <span>+</span></button>
-      <div class="mobile-submenu" id="ai-tools"><a href="https://myunghoon3847-maker.github.io/Lumen/" target="_blank" rel="noopener noreferrer">루멘 AI</a></div>
-      <button class="mobile-category-title" type="button" data-mobile-target="language-tools">외국어 <span>+</span></button>
-      <div class="mobile-submenu" id="language-tools"><a href="https://myunghoon3847-maker.github.io/harunihon/" target="_blank" rel="noopener noreferrer">하루니혼</a></div>
-      <button class="mobile-category-title" type="button" data-mobile-target="video">영상 <span>+</span></button>
-      <div class="mobile-submenu" id="video"><a href="#">영상 압축</a><a href="#">영상 변환</a><a href="#">영상 자르기</a><a href="#">오디오 추출</a></div>
-      <!-- 🌟 모바일 이미지 변환 메뉴에도 적용 -->
-      <button class="mobile-category-title" type="button" data-mobile-target="image">이미지 <span>+</span></button>
-      <div class="mobile-submenu" id="image">
-        <a href="#">이미지 압축</a>
-        <a href="#">크기 조절</a>
-        <a href="image_convert/" target="toolFrame" onclick="showIframe()">이미지 변환</a>
-        <a href="#">배경 제거</a>
-      </div>
-      <button class="mobile-category-title" type="button" data-mobile-target="convert">파일 변환 <span>+</span></button>
-      <div class="mobile-submenu" id="convert"><a href="#">PDF → Word</a><a href="#">Word → PDF</a><a href="#">오디오 변환</a><a href="#">압축 파일 변환</a></div>
-      <button class="mobile-category-title" type="button" data-mobile-target="pdf">PDF <span>+</span></button>
-      <div class="mobile-submenu" id="pdf"><a href="#">PDF 합치기</a><a href="#">PDF 나누기</a><a href="#">PDF 압축</a><a href="#">PDF → 이미지</a></div>
-      <button class="mobile-category-title" type="button" data-mobile-target="audio">오디오 <span>+</span></button>
-      <div class="mobile-submenu" id="audio"><a href="#">오디오 압축</a><a href="#">오디오 자르기</a><a href="#">오디오 합치기</a><a href="#">오디오 변환</a></div>
-    </div>
-  </header>
-
-  <main>
-    <section class="search-section">
-      <div class="search-wrap" id="searchWrap">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-        <input id="toolSearch" type="search" placeholder="필요한 도구 검색" autocomplete="off" />
-      </div>
-    </section>
-
-    <section class="tools-section">
-      <div class="section-heading">
-        <h1 id="pageTitle">온라인 도구</h1>
-        <span id="resultCount">15개 도구</span>
-      </div>
-
-      <!-- 🌟 뒤로 가기 버튼 -->
-      <button id="backBtn" class="back-btn" onclick="showGrid()">← 도구 목록으로 돌아가기</button>
-
-      <!-- 기존 도구 그리드 -->
-      <div class="tool-grid" id="toolGrid">
-
-        <a href="https://myunghoon3847-maker.github.io/Lumen/" target="_blank" rel="noopener noreferrer" class="tool-card" data-name="루멘 AI 인공지능 도구" data-category="AI 도구">
-          <span class="tool-icon ai">AI</span><span><strong>루멘 AI</strong><small>AI 도구 바로가기</small></span>
-        </a>
-        <a href="https://myunghoon3847-maker.github.io/harunihon/" target="_blank" rel="noopener noreferrer" class="tool-card" data-name="하루니혼 일본어 외국어 학습" data-category="외국어">
-          <span class="tool-icon language">あ</span><span><strong>하루니혼</strong><small>일본어 학습 도구 바로가기</small></span>
-        </a>
-        
-        <!-- 🌟 이미지 변환기 카드를 그리드에도 추가했습니다 -->
-        <a href="image_convert/" target="toolFrame" class="tool-card" data-name="이미지 변환 변환기 JPG PNG WEBP" data-category="이미지" onclick="showIframe()">
-            <span class="tool-icon image">🔄</span><span><strong>이미지 변환</strong><small>JPG, PNG, WEBP 변환</small></span>
-        </a>
-
-        <a href="#" class="tool-card" data-name="영상 압축 동영상 용량 줄이기" data-category="영상">
-          <span class="tool-icon video">▶</span><span><strong>영상 압축</strong><small>동영상 용량 줄이기</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="영상 변환 MP4 MOV AVI" data-category="영상">
-          <span class="tool-icon video">↔</span><span><strong>영상 변환</strong><small>MP4, MOV, AVI 변환</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="이미지 압축 JPG PNG WEBP" data-category="이미지">
-          <span class="tool-icon image">▧</span><span><strong>이미지 압축</strong><small>화질을 유지하며 용량 줄이기</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="이미지 크기 조절 리사이즈" data-category="이미지">
-          <span class="tool-icon image">↗</span><span><strong>이미지 크기 조절</strong><small>가로·세로 크기 변경</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="이미지 배경 제거 누끼" data-category="이미지">
-          <span class="tool-icon image">✦</span><span><strong>배경 제거</strong><small>사진 배경 자동 제거</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="PDF Word 변환" data-category="파일 변환">
-          <span class="tool-icon file">W</span><span><strong>PDF → Word</strong><small>PDF를 DOCX로 변환</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="Word PDF 변환" data-category="파일 변환">
-          <span class="tool-icon file">P</span><span><strong>Word → PDF</strong><small>DOCX를 PDF로 변환</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="PDF 합치기 병합" data-category="PDF">
-          <span class="tool-icon pdf">＋</span><span><strong>PDF 합치기</strong><small>여러 PDF를 하나로</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="PDF 나누기 분할" data-category="PDF">
-          <span class="tool-icon pdf">÷</span><span><strong>PDF 나누기</strong><small>필요한 페이지만 분리</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="PDF 압축 용량" data-category="PDF">
-          <span class="tool-icon pdf">↓</span><span><strong>PDF 압축</strong><small>PDF 파일 용량 줄이기</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="오디오 변환 MP3 WAV M4A" data-category="오디오">
-          <span class="tool-icon audio">♫</span><span><strong>오디오 변환</strong><small>MP3, WAV, M4A 변환</small></span>
-        </a>
-        <a href="#" class="tool-card" data-name="QR 코드 생성 만들기" data-category="기타 도구">
-          <span class="tool-icon etc">▦</span><span><strong>QR 코드 만들기</strong><small>링크·텍스트 QR 생성</small></span>
-        </a>
-      </div>
-
-      <div class="empty-state" id="emptyState" hidden>검색 결과가 없습니다.</div>
-
-      <!-- 🌟 도구가 실행될 iframe 영역 (평소엔 숨겨짐) -->
-      <div class="tool-frame-container" id="iframeContainer">
-        <iframe name="toolFrame" id="toolFrame"></iframe>
-      </div>
-
-    </section>
-  </main>
-
-  <script src="./script.js"></script>
-
-  <!-- 🌟 화면 전환 및 제어를 위한 자바스크립트 -->
-  <script>
-    const toolGrid = document.getElementById('toolGrid');
-    const iframeContainer = document.getElementById('iframeContainer');
-    const backBtn = document.getElementById('backBtn');
-    const pageTitle = document.getElementById('pageTitle');
-    const resultCount = document.getElementById('resultCount');
-    const searchWrap = document.getElementById('searchWrap');
-
-    // 1. 도구(iframe)를 보여주는 함수
-    function showIframe() {
-      toolGrid.classList.add('hide-grid'); // 그리드 목록 숨기기
-      iframeContainer.style.display = 'block'; // 아이프레임(도구 화면) 보이기
-      backBtn.style.display = 'inline-block'; // 뒤로가기 버튼 보이기
-      
-      // 타이틀 및 검색창 UI 변경
-      pageTitle.innerText = '도구 실행 중 🛠️';
-      resultCount.style.display = 'none';
-      if(searchWrap) searchWrap.style.display = 'none'; 
-    }
-
-    // 2. 메인 화면(그리드 목록)으로 돌아가는 함수
-    function showGrid() {
-      toolGrid.classList.remove('hide-grid'); // 그리드 목록 다시 보이기
-      iframeContainer.style.display = 'none'; // 아이프레임 숨기기
-      backBtn.style.display = 'none'; // 뒤로가기 버튼 숨기기
-      
-      // 아이프레임 내부에 열려있던 페이지 초기화
-      document.getElementById('toolFrame').src = '';
-
-      // 타이틀 및 검색창 UI 원상복구
-      pageTitle.innerText = '온라인 도구';
-      resultCount.style.display = 'inline-block';
-      if(searchWrap) searchWrap.style.display = 'flex';
-    }
-  </script>
 </body>
 </html>
