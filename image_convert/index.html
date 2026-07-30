@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초간단 이미지 변환기 | ToolMoa</title>
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .tool-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            text-align: center;
+            width: 100%;
+            max-width: 450px;
+        }
+        h1 {
+            font-size: 26px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #7f8c8d;
+            font-size: 15px;
+            margin-bottom: 25px;
+        }
+        
+        /* 미리보기 영역 스타일 */
+        .preview-box {
+            width: 100%;
+            height: 250px;
+            border: 2px dashed #dcdde1;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-color: #f8f9fa;
+            position: relative;
+        }
+        .preview-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: none; /* 초기에는 숨김 */
+        }
+        .preview-text {
+            color: #a4b0be;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        select {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 20px;
+            border: 1px solid #dcdde1;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: white;
+            color: #2f3640;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            background-color: #4cd137;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        button:hover {
+            background-color: #44bd32;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tool-container">
+        <h1>이미지 포맷 변환기 🔄</h1>
+        <p>서버 저장 없이 브라우저에서 안전하게 변환됩니다.</p>
+
+        <!-- 미리보기 영역 추가 -->
+        <div class="preview-box">
+            <span class="preview-text" id="previewText">이미지를 선택하면 이곳에 표시됩니다</span>
+            <img id="imagePreview" alt="미리보기">
+        </div>
+
+        <!-- 1. 파일 선택 -->
+        <input type="file" id="imageInput" accept="image/*">
+
+        <!-- 2. 변환할 포맷 선택 -->
+        <select id="formatSelect">
+            <option value="image/jpeg">JPG로 변환</option>
+            <option value="image/png">PNG로 변환</option>
+            <option value="image/webp">WEBP로 변환 (블로그 추천)</option>
+        </select>
+
+        <!-- 3. 변환 버튼 -->
+        <button id="convertBtn">변환 및 다운로드</button>
+
+        <!-- 변환 처리를 위한 숨겨진 캔버스 -->
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const formatSelect = document.getElementById('formatSelect');
+        const convertBtn = document.getElementById('convertBtn');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 미리보기 관련 요소
+        const imagePreview = document.getElementById('imagePreview');
+        const previewText = document.getElementById('previewText');
+
+        // 파일이 선택되었을 때 미리보기 표시
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block'; // 이미지 보이기
+                    previewText.style.display = 'none';   // 안내 텍스트 숨기기
+                }
+                
+                reader.readAsDataURL(file);
+            } else {
+                // 사용자가 파일 선택을 취소했을 때 초기화
+                imagePreview.src = '';
+                imagePreview.style.display = 'none';
+                previewText.style.display = 'block';
+            }
+        });
+
+        // 변환 버튼 클릭 로직
+        convertBtn.addEventListener('click', () => {
+            if (!imageInput.files[0]) {
+                alert('변환할 이미지를 먼저 선택해주세요!');
+                return;
+            }
+
+            const file = imageInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    // 배경이 투명한 PNG를 JPG로 변환할 때 배경을 흰색으로 처리
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // 캔버스 초기화 (투명 배경 방지)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    ctx.drawImage(img, 0, 0);
+
+                    const format = formatSelect.value;
+                    const extension = format.split('/')[1]; 
+                    const newDataUrl = canvas.toDataURL(format, 0.9);
+
+                    const link = document.createElement('a');
+                    link.download = `ToolMoa_converted.${extension}`;
+                    link.href = newDataUrl;
+                    link.click();
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+    </script>
+
+</body>
+</html>
