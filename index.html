@@ -6,11 +6,55 @@
   <title>툴모아</title>
   <meta name="description" content="영상, 이미지, PDF, 파일 변환 도구를 바로 사용할 수 있는 온라인 도구 모음" />
   <link rel="stylesheet" href="./styles.css" />
+  
+  <!-- 🌟 도구 실행 화면(iframe)을 위한 추가 스타일 -->
+  <style>
+    .tool-frame-container {
+      display: none; /* 초기에는 숨김 */
+      width: 100%;
+      height: 75vh; /* 화면 높이의 75% 차지 */
+      margin-top: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #ffffff;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    
+    #toolFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .hide-grid {
+      display: none !important;
+    }
+
+    .back-btn {
+      display: none; /* 초기에는 숨김 */
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background-color: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .back-btn:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+  </style>
 </head>
 <body>
   <header class="site-header">
     <div class="header-main">
-      <a href="#" class="brand" aria-label="툴모아 홈">
+      <!-- 🌟 로고 클릭 시에도 도구 목록으로 돌아오도록 이벤트 추가 -->
+      <a href="#" class="brand" aria-label="툴모아 홈" onclick="showGrid(); return false;">
         <span class="brand-logo" aria-hidden="true">
           <svg viewBox="0 0 48 48" role="img">
             <rect x="8" y="8" width="14" height="14" rx="4"></rect>
@@ -34,7 +78,8 @@
 
     <nav class="category-nav" aria-label="도구 카테고리">
       <div class="nav-inner">
-        <button class="category-button active" type="button" data-category="all">전체 도구</button>
+        <!-- 🌟 전체 도구 클릭 시에도 도구 목록 띄우기 -->
+        <button class="category-button active" type="button" data-category="all" onclick="showGrid()">전체 도구</button>
 
          <div class="category-item">
           <button class="category-button dropdown-trigger" type="button" aria-expanded="false">
@@ -44,7 +89,8 @@
           <div class="dropdown-menu">
             <a href="#" data-tool="image-compress"><strong>이미지 압축</strong><span>화질을 유지하며 용량 줄이기</span></a>
             <a href="#" data-tool="image-resize"><strong>크기 조절</strong><span>가로·세로 크기 변경</span></a>
-            <a href="image_convert/" data-tool="image-convert"><strong>이미지 변환</strong><span>JPG, PNG, WEBP 변환</span></a>
+            <!-- 🌟 이미지 변환 메뉴: iframe 타겟 지정 및 클릭 이벤트 추가 -->
+            <a href="image_convert/" target="toolFrame" data-tool="image-convert" onclick="showIframe()"><strong>이미지 변환</strong><span>JPG, PNG, WEBP 변환</span></a>
             <a href="#" data-tool="image-background"><strong>배경 제거</strong><span>사진 배경 자동 제거</span></a>
             <a href="#" data-tool="image-crop"><strong>이미지 자르기</strong><span>원하는 영역만 잘라내기</span></a>
           </div>
@@ -151,15 +197,20 @@
     </nav>
 
     <div class="mobile-category-panel" aria-hidden="true">
-
       <button class="mobile-category-title" type="button" data-mobile-target="ai-tools">AI 도구 <span>+</span></button>
       <div class="mobile-submenu" id="ai-tools"><a href="https://myunghoon3847-maker.github.io/Lumen/" target="_blank" rel="noopener noreferrer">루멘 AI</a></div>
       <button class="mobile-category-title" type="button" data-mobile-target="language-tools">외국어 <span>+</span></button>
       <div class="mobile-submenu" id="language-tools"><a href="https://myunghoon3847-maker.github.io/harunihon/" target="_blank" rel="noopener noreferrer">하루니혼</a></div>
       <button class="mobile-category-title" type="button" data-mobile-target="video">영상 <span>+</span></button>
       <div class="mobile-submenu" id="video"><a href="#">영상 압축</a><a href="#">영상 변환</a><a href="#">영상 자르기</a><a href="#">오디오 추출</a></div>
+      <!-- 🌟 모바일 이미지 변환 메뉴에도 적용 -->
       <button class="mobile-category-title" type="button" data-mobile-target="image">이미지 <span>+</span></button>
-      <div class="mobile-submenu" id="image"><a href="#">이미지 압축</a><a href="#">크기 조절</a><a href="#">이미지 변환</a><a href="#">배경 제거</a></div>
+      <div class="mobile-submenu" id="image">
+        <a href="#">이미지 압축</a>
+        <a href="#">크기 조절</a>
+        <a href="image_convert/" target="toolFrame" onclick="showIframe()">이미지 변환</a>
+        <a href="#">배경 제거</a>
+      </div>
       <button class="mobile-category-title" type="button" data-mobile-target="convert">파일 변환 <span>+</span></button>
       <div class="mobile-submenu" id="convert"><a href="#">PDF → Word</a><a href="#">Word → PDF</a><a href="#">오디오 변환</a><a href="#">압축 파일 변환</a></div>
       <button class="mobile-category-title" type="button" data-mobile-target="pdf">PDF <span>+</span></button>
@@ -171,7 +222,7 @@
 
   <main>
     <section class="search-section">
-      <div class="search-wrap">
+      <div class="search-wrap" id="searchWrap">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
         <input id="toolSearch" type="search" placeholder="필요한 도구 검색" autocomplete="off" />
       </div>
@@ -179,10 +230,14 @@
 
     <section class="tools-section">
       <div class="section-heading">
-        <h1>온라인 도구</h1>
-        <span id="resultCount">14개 도구</span>
+        <h1 id="pageTitle">온라인 도구</h1>
+        <span id="resultCount">15개 도구</span>
       </div>
 
+      <!-- 🌟 뒤로 가기 버튼 -->
+      <button id="backBtn" class="back-btn" onclick="showGrid()">← 도구 목록으로 돌아가기</button>
+
+      <!-- 기존 도구 그리드 -->
       <div class="tool-grid" id="toolGrid">
 
         <a href="https://myunghoon3847-maker.github.io/Lumen/" target="_blank" rel="noopener noreferrer" class="tool-card" data-name="루멘 AI 인공지능 도구" data-category="AI 도구">
@@ -191,6 +246,12 @@
         <a href="https://myunghoon3847-maker.github.io/harunihon/" target="_blank" rel="noopener noreferrer" class="tool-card" data-name="하루니혼 일본어 외국어 학습" data-category="외국어">
           <span class="tool-icon language">あ</span><span><strong>하루니혼</strong><small>일본어 학습 도구 바로가기</small></span>
         </a>
+        
+        <!-- 🌟 이미지 변환기 카드를 그리드에도 추가했습니다 -->
+        <a href="image_convert/" target="toolFrame" class="tool-card" data-name="이미지 변환 변환기 JPG PNG WEBP" data-category="이미지" onclick="showIframe()">
+            <span class="tool-icon image">🔄</span><span><strong>이미지 변환</strong><small>JPG, PNG, WEBP 변환</small></span>
+        </a>
+
         <a href="#" class="tool-card" data-name="영상 압축 동영상 용량 줄이기" data-category="영상">
           <span class="tool-icon video">▶</span><span><strong>영상 압축</strong><small>동영상 용량 줄이기</small></span>
         </a>
@@ -230,9 +291,52 @@
       </div>
 
       <div class="empty-state" id="emptyState" hidden>검색 결과가 없습니다.</div>
+
+      <!-- 🌟 도구가 실행될 iframe 영역 (평소엔 숨겨짐) -->
+      <div class="tool-frame-container" id="iframeContainer">
+        <iframe name="toolFrame" id="toolFrame"></iframe>
+      </div>
+
     </section>
   </main>
 
   <script src="./script.js"></script>
+
+  <!-- 🌟 화면 전환 및 제어를 위한 자바스크립트 -->
+  <script>
+    const toolGrid = document.getElementById('toolGrid');
+    const iframeContainer = document.getElementById('iframeContainer');
+    const backBtn = document.getElementById('backBtn');
+    const pageTitle = document.getElementById('pageTitle');
+    const resultCount = document.getElementById('resultCount');
+    const searchWrap = document.getElementById('searchWrap');
+
+    // 1. 도구(iframe)를 보여주는 함수
+    function showIframe() {
+      toolGrid.classList.add('hide-grid'); // 그리드 목록 숨기기
+      iframeContainer.style.display = 'block'; // 아이프레임(도구 화면) 보이기
+      backBtn.style.display = 'inline-block'; // 뒤로가기 버튼 보이기
+      
+      // 타이틀 및 검색창 UI 변경
+      pageTitle.innerText = '도구 실행 중 🛠️';
+      resultCount.style.display = 'none';
+      if(searchWrap) searchWrap.style.display = 'none'; 
+    }
+
+    // 2. 메인 화면(그리드 목록)으로 돌아가는 함수
+    function showGrid() {
+      toolGrid.classList.remove('hide-grid'); // 그리드 목록 다시 보이기
+      iframeContainer.style.display = 'none'; // 아이프레임 숨기기
+      backBtn.style.display = 'none'; // 뒤로가기 버튼 숨기기
+      
+      // 아이프레임 내부에 열려있던 페이지 초기화
+      document.getElementById('toolFrame').src = '';
+
+      // 타이틀 및 검색창 UI 원상복구
+      pageTitle.innerText = '온라인 도구';
+      resultCount.style.display = 'inline-block';
+      if(searchWrap) searchWrap.style.display = 'flex';
+    }
+  </script>
 </body>
 </html>
